@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live HTML12 Editor</title>
+    <title>foolhtml live editor | Live onepage browser based html editor, no installation required.</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/htmlmixed/htmlmixed.min.js"></script>
@@ -13,6 +13,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/edit/closetag.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/mode/multiplex.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/material-darker.min.css">
+    <link rel="icon" href="favi.png" type="image/png">
 <style>
         body, html {
             height: 100%;
@@ -134,114 +135,118 @@
         </div>
     </div>
 <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const placeholder = document.getElementById('placeholder');
-            const outputArea = document.getElementById('output-area');
-            const filenameElement = document.getElementById('filename');
-            filenameElement.style.fontWeight = 'bold';
-			filenameElement.style.textDecoration = 'underline';
-            const fileInput = document.getElementById('fileInput');
-            let currentFileName = 'Untitled.html';
-            
-            // Initialize CodeMirror
-            const editor = CodeMirror(document.getElementById('editor'), {
-                mode: "htmlmixed",
-                theme: "material-darker",
-                lineNumbers: true,
-                autoCloseTags: true,
-                styleActiveLine: true,
-                matchBrackets: true
-            });
-
-            function updateOutput() {
-                const htmlContent = editor.getValue();
-                const iframe = document.getElementById('outputIframe');
-                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-                
-                iframeDoc.open();
-                iframeDoc.write(htmlContent);
-                iframeDoc.close();
-                
-                // Override window.print in the iframe to communicate with parent
-                iframeDoc.defaultView.window.print = function() {
-                    window.parent.postMessage('print', '*');
-                };
-
-                placeholder.style.display = htmlContent.trim() ? 'none' : 'block';
-            }
-
-            editor.on('change', updateOutput);
-
-            // Open functionality
-            document.getElementById('openBtn').addEventListener('click', () => {
-                fileInput.click();
-            });
-
-            fileInput.addEventListener('change', (event) => {
-                const file = event.target.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        editor.setValue(e.target.result);
-                        currentFileName = file.name;
-                        filenameElement.textContent = currentFileName;
-                        updateOutput();
-                    };
-                    reader.readAsText(file);
-                }
-                fileInput.value = '';
-            });
-
-            // Save As functionality
-            function downloadFile(filename, content) {
-                const blob = new Blob([content], { type: 'text/html' });
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = filename;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-                document.body.removeChild(a);
-            }
-
-   
-
-            // Save functionality
-          document.getElementById('saveAsBtn').addEventListener('click', () => {
-    const newFilename = prompt('Enter filename:', currentFileName);
-    if (newFilename !== null) { // Only proceed if the user didn't cancel
-        const filename = newFilename.endsWith('.html') ? newFilename : `${newFilename}.html`;
-        currentFileName = filename;
-        filenameElement.textContent = currentFileName;
-        downloadFile(currentFileName, editor.getValue());
-    }
-});
-            // Listen for messages from the iframe for print commands
-            window.addEventListener('message', function(event) {
-                if (event.data === 'print') {
-                    const iframeContent = document.getElementById('outputIframe').contentWindow.document.documentElement.outerHTML;
-                    
-                    const printWindow = window.open('', '_blank', 'height=600,width=800');
-                    printWindow.document.write('<html><head><title>Print Preview</title>');
-                    printWindow.document.write('<style>@media print {body {width: 100%; padding: 0; margin: 0;}}</style>');
-                    printWindow.document.write('</head><body>');
-                    printWindow.document.write(iframeContent);
-                    printWindow.document.write('</body></html>');
-                    
-                    printWindow.document.close();
-                    
-                    // Ensure the print dialog opens after the content is fully loaded
-                    setTimeout(function() {
-                        printWindow.focus(); // Needed for Firefox
-                        printWindow.print();
-                        // Optionally, close the print window if you don't want it to remain open
-                        // printWindow.close();
-                    }, 500);
-                }
-            });
+    document.addEventListener('DOMContentLoaded', function() {
+        const placeholder = document.getElementById('placeholder');
+        const outputArea = document.getElementById('output-area');
+        const filenameElement = document.getElementById('filename');
+        filenameElement.style.fontWeight = 'bold';
+        filenameElement.style.textDecoration = 'underline';
+        const fileInput = document.getElementById('fileInput');
+        let currentFileName = 'Untitled.html';
+        
+        // Initialize CodeMirror
+        const editor = CodeMirror(document.getElementById('editor'), {
+            mode: "htmlmixed",
+            theme: "material-darker",
+            lineNumbers: true,
+            autoCloseTags: true,
+            styleActiveLine: true,
+            matchBrackets: true
         });
-    </script>
+
+        function updateOutput() {
+            const htmlContent = editor.getValue();
+            const iframe = document.getElementById('outputIframe');
+            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+            
+            iframeDoc.open();
+            iframeDoc.write(htmlContent);
+            iframeDoc.close();
+            
+            // Override window.print in the iframe to communicate with parent
+            iframeDoc.defaultView.window.print = function() {
+                window.parent.postMessage('print', '*');
+            };
+
+            placeholder.style.display = htmlContent.trim() ? 'none' : 'block';
+        }
+
+        editor.on('change', updateOutput);
+
+        // Open functionality
+        document.getElementById('openBtn').addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    editor.setValue(e.target.result);
+                    currentFileName = file.name;
+                    filenameElement.textContent = currentFileName;
+                    updateOutput();
+                };
+                reader.readAsText(file);
+            }
+            fileInput.value = '';
+        });
+
+        // Save As functionality
+        function downloadFile(filename, content) {
+            const blob = new Blob([content], { type: 'text/html' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        }
+
+        // Save functionality
+        document.getElementById('saveBtn').addEventListener('click', () => {
+            downloadFile(currentFileName, editor.getValue());
+        });
+
+        // Save As functionality
+        document.getElementById('saveAsBtn').addEventListener('click', () => {
+            const newFilename = prompt('Enter filename:', currentFileName);
+            if (newFilename !== null) { 
+                const filename = newFilename.endsWith('.html') ? newFilename : `${newFilename}.html`;
+                currentFileName = filename;
+                filenameElement.textContent = currentFileName;
+                downloadFile(currentFileName, editor.getValue());
+            }
+        });
+
+        // Listen for messages from the iframe for print commands
+        window.addEventListener('message', function(event) {
+            if (event.data === 'print') {
+                const iframeContent = document.getElementById('outputIframe').contentWindow.document.documentElement.outerHTML;
+                
+                const printWindow = window.open('', '_blank', 'height=600,width=800');
+                printWindow.document.write('<html><head><title>Print Preview</title>');
+                printWindow.document.write('<style>@media print {body {width: 100%; padding: 0; margin: 0;}}</style>');
+                printWindow.document.write('</head><body>');
+                printWindow.document.write(iframeContent);
+                printWindow.document.write('</body></html>');
+                
+                printWindow.document.close();
+                
+                // Ensure the print dialog opens after the content is fully loaded
+                setTimeout(function() {
+                    printWindow.focus(); // Needed for Firefox
+                    printWindow.print();
+                    // Optionally, close the print window if you don't want it to remain open
+                    // printWindow.close();
+                }, 500);
+            }
+        });
+    });
+</script>
 </body>
 </html>
 </body>
