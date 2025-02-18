@@ -90,8 +90,13 @@
             width: 50%;
             height: auto;
             margin-top: -5px;
-            background: white;
-            overflow: auto; padding:10px; 
+            overflow: auto;
+            padding: 0;
+        }
+        #outputIframe {
+            width: 100%;
+            height: 100%;
+            border: none;
         }
         #fileInput {
             display: none;
@@ -113,7 +118,9 @@
             <div id="editor" class="CodeMirror"></div>
             <div id="placeholder" class="placeholder">CODE <br>SOMETHING<br> FOOL!</div>
         </div>
-        <div id="output-area"></div>
+        <div id="output-area">
+            <iframe id="outputIframe"></iframe>
+        </div>
     </div>
 
     <script>
@@ -134,24 +141,37 @@
                 matchBrackets: true
             });
 
-            // Setup ShadowDOM for output
-            let shadowRoot = outputArea.attachShadow({mode: 'open'});
-
             function updateOutput() {
                 const htmlContent = editor.getValue();
-                shadowRoot.innerHTML = '';
+                const iframe = document.getElementById('outputIframe');
+                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
                 
-                const style = document.createElement('style');
-                style.textContent = `
-                    html, body { height: 100%; margin: 0; padding: 0; }
-                    body { overflow: auto; }
-                `;
-                shadowRoot.appendChild(style);
+                iframeDoc.open();
+                iframeDoc.write(htmlContent);
+                iframeDoc.close();
+                
+                // Listen for messages from the iframe for print commands
+                window.addEventListener('message', function(event) {
+                    if (event.data === 'print') {
+                        // Print only the iframe content
+                        var iframeContent = iframe.contentWindow.document.documentElement.outerHTML;
+                        
+                        var printWindow = window.open('', 'PRINT', 'height=400,width=600');
+                        printWindow.document.write('<html><head><title>' + document.title + '</title>');
+                        printWindow.document.write('<style>@media print {body {width: 100%; padding: 0; margin: 0;}}</style>');
+                        printWindow.document.write('</head><body>');
+                        printWindow.document.write(iframeContent);
+                        printWindow.document.write('</body></html>');
+                        
+                        setTimeout(function() {
+                            printWindow.document.close();
+                            printWindow.focus();
+                            printWindow.print();
+                            printWindow.close();
+                        }, 500); // Small delay to ensure content is loaded before printing
+                    }
+                });
 
-                const template = document.createElement('template');
-                template.innerHTML = htmlContent;
-                shadowRoot.appendChild(template.content);
-                
                 placeholder.style.display = htmlContent.trim() ? 'none' : 'block';
             }
 
@@ -203,6 +223,22 @@
             document.getElementById('saveBtn').addEventListener('click', () => {
                 downloadFile(currentFileName, editor.getValue());
             });
+
+            // Modify the iframe's content to communicate back to the parent for print
+            function modifyIframeScript(iframeDoc) {
+                const script = iframeDoc.createElement('script');
+                script.textContent = `
+                    window.print = function() {
+                        window.parent.postMessage('print', '*');
+                    };
+                `;
+                iframeDoc.head.appendChild(script);
+            }
+
+            // When the iframe content is loaded, add the print function workaround
+            document.getElementById('outputIframe').onload = function() {
+                modifyIframeScript(this.contentDocument);
+            };
         });
     </script>
 </body>
