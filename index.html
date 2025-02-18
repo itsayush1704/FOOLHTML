@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live HTML Editor</title>
+    <title>Live HTML12 Editor</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/htmlmixed/htmlmixed.min.js"></script>
@@ -13,7 +13,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/edit/closetag.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/mode/multiplex.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/material-darker.min.css">
-    <style>
+<style>
         body, html {
             height: 100%;
             margin: 0;
@@ -122,8 +122,7 @@
             <iframe id="outputIframe"></iframe>
         </div>
     </div>
-
-    <script>
+<script>
         document.addEventListener('DOMContentLoaded', function() {
             const placeholder = document.getElementById('placeholder');
             const outputArea = document.getElementById('output-area');
@@ -150,27 +149,10 @@
                 iframeDoc.write(htmlContent);
                 iframeDoc.close();
                 
-                // Listen for messages from the iframe for print commands
-                window.addEventListener('message', function(event) {
-                    if (event.data === 'print') {
-                        // Print only the iframe content
-                        var iframeContent = iframe.contentWindow.document.documentElement.outerHTML;
-                        
-                        var printWindow = window.open('', 'PRINT', 'height=400,width=600');
-                        printWindow.document.write('<html><head><title>' + document.title + '</title>');
-                        printWindow.document.write('<style>@media print {body {width: 100%; padding: 0; margin: 0;}}</style>');
-                        printWindow.document.write('</head><body>');
-                        printWindow.document.write(iframeContent);
-                        printWindow.document.write('</body></html>');
-                        
-                        setTimeout(function() {
-                            printWindow.document.close();
-                            printWindow.focus();
-                            printWindow.print();
-                            printWindow.close();
-                        }, 500); // Small delay to ensure content is loaded before printing
-                    }
-                });
+                // Override window.print in the iframe to communicate with parent
+                iframeDoc.defaultView.window.print = function() {
+                    window.parent.postMessage('print', '*');
+                };
 
                 placeholder.style.display = htmlContent.trim() ? 'none' : 'block';
             }
@@ -190,11 +172,11 @@
                         editor.setValue(e.target.result);
                         currentFileName = file.name;
                         filenameElement.textContent = currentFileName;
-                        updateOutput(); // Update output after loading new content
+                        updateOutput();
                     };
                     reader.readAsText(file);
                 }
-                fileInput.value = ''; // Reset file input
+                fileInput.value = '';
             });
 
             // Save As functionality
@@ -224,22 +206,33 @@
                 downloadFile(currentFileName, editor.getValue());
             });
 
-            // Modify the iframe's content to communicate back to the parent for print
-            function modifyIframeScript(iframeDoc) {
-                const script = iframeDoc.createElement('script');
-                script.textContent = `
-                    window.print = function() {
-                        window.parent.postMessage('print', '*');
-                    };
-                `;
-                iframeDoc.head.appendChild(script);
-            }
-
-            // When the iframe content is loaded, add the print function workaround
-            document.getElementById('outputIframe').onload = function() {
-                modifyIframeScript(this.contentDocument);
-            };
+            // Listen for messages from the iframe for print commands
+            window.addEventListener('message', function(event) {
+                if (event.data === 'print') {
+                    const iframeContent = document.getElementById('outputIframe').contentWindow.document.documentElement.outerHTML;
+                    
+                    const printWindow = window.open('', '_blank', 'height=600,width=800');
+                    printWindow.document.write('<html><head><title>Print Preview</title>');
+                    printWindow.document.write('<style>@media print {body {width: 100%; padding: 0; margin: 0;}}</style>');
+                    printWindow.document.write('</head><body>');
+                    printWindow.document.write(iframeContent);
+                    printWindow.document.write('</body></html>');
+                    
+                    printWindow.document.close();
+                    
+                    // Ensure the print dialog opens after the content is fully loaded
+                    setTimeout(function() {
+                        printWindow.focus(); // Needed for Firefox
+                        printWindow.print();
+                        // Optionally, close the print window if you don't want it to remain open
+                        // printWindow.close();
+                    }, 500);
+                }
+            });
         });
     </script>
+</body>
+</html>
+</body>
 </body>
 </html>
