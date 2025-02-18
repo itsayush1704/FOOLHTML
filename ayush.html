@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live HTML Editor</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/htmlmixed/htmlmixed.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/edit/closetag.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/mode/multiplex.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/material-darker.min.css">
+  
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            font-family: 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        }
+        .container {
+            display: flex;
+            height: 100%;
+        }
+        .editor-container {
+            width: 50%;
+            background: #1c1c1e; /* Darker Apple-style background */
+            position: relative;
+        }
+        .CodeMirror {
+            height: 100%;
+            background: #1c1c1e;
+            font-size: 14px;
+            line-height: 1.5;
+            caret-color: white;
+        }
+        .placeholder {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: rgba(255,255,255,0.2);
+            font-size: 24px;
+            pointer-events: none;
+        }
+        #output-area {
+            width: 50%;
+            height: 100%;
+            border-left: 1px solid #ccc;
+            padding: 10px;
+            background: white;
+        }
+        #save-buttons {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 10px;
+            background: transparent; /* Transparent background */
+            display: flex;
+            justify-content: center;
+            backdrop-filter: blur(10px); /* Apple-style frosted glass effect */
+        }
+        #save-as, #save {
+            background: rgba(255, 255, 255, 0.1); /* Semi-transparent white */
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 10px 20px;
+            margin-right: 10px;
+            cursor: pointer;
+            transition: background-color 0.3s, border-color 0.3s;
+            border-radius: 4px; /* Slightly rounded corners */
+        }
+        #save-as:hover, #save:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+    </style>
+</head>
+</head>
+<body>
+    <div class="container">
+        <div class="editor-container">
+            <div id="editor" class="CodeMirror"></div>
+            <div id="placeholder" class="placeholder">CODE <br>SOMETHING</br> FOOL!</div>
+            <div id="save-buttons">
+                <button id="save-as">Save As...</button>
+                <button id="save">Save</button>
+            </div>
+        </div>
+        <iframe id="output-area" sandbox="allow-scripts allow-same-origin"></iframe>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const placeholder = document.getElementById('placeholder');
+            const outputArea = document.getElementById('output-area').contentWindow.document;
+            const editor = CodeMirror(document.getElementById('editor'), {
+                mode: "htmlmixed",
+                theme: "material-darker",
+                lineNumbers: true,
+                autoCloseTags: true,
+                styleActiveLine: true,
+                matchBrackets: true
+            });
+            function updateOutput() {
+                outputArea.open();
+                outputArea.writeln(editor.getValue());
+                outputArea.close();
+                placeholder.style.display = editor.getValue().trim() ? 'none' : 'block';
+            }
+            editor.on('change', updateOutput);
+
+            // Adding event listeners for save buttons
+            document.getElementById('save').addEventListener('click', function() {
+                const content = editor.getValue();
+                localStorage.setItem('editorContent', content);
+                alert('Content saved as ayush.html in localStorage!');
+            });
+
+            document.getElementById('save-as').addEventListener('click', function() {
+                const content = editor.getValue();
+                const fileName = prompt('Enter file name:', 'ayush.html');
+                if (fileName) {
+                    const blob = new Blob([content], { type: 'text/html' });
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = fileName;
+                    link.click();
+                    URL.revokeObjectURL(link.href);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
