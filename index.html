@@ -64,7 +64,7 @@
         .container {
             display: flex;
             height: 100%;
-            padding-top: 51px; /* Height of the banner */
+            padding-top: 51px;
         }
         .editor-container {
             width: 50%;
@@ -98,11 +98,11 @@
 </head>
 <body>
     <div class="banner">
-        <h1 class="filename">Untitled.html</h1>
+        <h1 class="filename" id="filename">Untitled.html</h1>
         <div class="button-group">
-            <button class="button button-secondary">Open</button>
-            <button class="button button-secondary">Save As...</button>
-            <button class="button button-primary">Save</button>
+            <button class="button button-secondary" id="openBtn">Open</button>
+            <button class="button button-secondary" id="saveAsBtn">Save As...</button>
+            <button class="button button-primary" id="saveBtn">Save</button>
         </div>
     </div>
     <div class="container">
@@ -116,6 +116,10 @@
         document.addEventListener('DOMContentLoaded', function() {
             const placeholder = document.getElementById('placeholder');
             const outputArea = document.getElementById('output-area').contentWindow.document;
+            const filenameElement = document.getElementById('filename');
+            let currentFileHandle = null;
+
+            // Initialize CodeMirror
             const editor = CodeMirror(document.getElementById('editor'), {
                 mode: "htmlmixed",
                 theme: "material-darker",
@@ -124,13 +128,81 @@
                 styleActiveLine: true,
                 matchBrackets: true
             });
+
             function updateOutput() {
                 outputArea.open();
                 outputArea.writeln(editor.getValue());
                 outputArea.close();
                 placeholder.style.display = editor.getValue().trim() ? 'none' : 'block';
             }
+
             editor.on('change', updateOutput);
+
+            // Open file functionality
+            document.getElementById('openBtn').addEventListener('click', async () => {
+                try {
+                    const [fileHandle] = await window.showOpenFilePicker({
+                        types: [{
+                            description: 'HTML Files',
+                            accept: {
+                                'text/html': ['.html', '.htm']
+                            }
+                        }]
+                    });
+                    
+                    currentFileHandle = fileHandle;
+                    const file = await fileHandle.getFile();
+                    const contents = await file.text();
+                    
+                    editor.setValue(contents);
+                    filenameElement.textContent = fileHandle.name;
+                } catch (err) {
+                    if (err.name !== 'AbortError') {
+                        console.error('Error opening file:', err);
+                    }
+                }
+            });
+
+            // Save functionality
+            document.getElementById('saveBtn').addEventListener('click', async () => {
+                if (currentFileHandle) {
+                    try {
+                        const writable = await currentFileHandle.createWritable();
+                        await writable.write(editor.getValue());
+                        await writable.close();
+                    } catch (err) {
+                        console.error('Error saving file:', err);
+                    }
+                } else {
+                    // If no file is open, behave like Save As
+                    document.getElementById('saveAsBtn').click();
+                }
+            });
+
+            // Save As functionality
+            document.getElementById('saveAsBtn').addEventListener('click', async () => {
+                try {
+                    const fileHandle = await window.showSaveFilePicker({
+                        types: [{
+                            description: 'HTML Files',
+                            accept: {
+                                'text/html': ['.html']
+                            }
+                        }]
+                    });
+                    
+                    currentFileHandle = fileHandle;
+                    const writable = await fileHandle.createWritable();
+                    await writable.write(editor.getValue());
+                    await writable.close();
+                    
+                    filenameElement.textContent = fileHandle.name;
+                } catch (err) {
+                    if (err.name !== 'AbortError') {
+                        console.error('Error saving file:', err);
+                    }
+                }
+            });
         });
     </script>
 </body>
