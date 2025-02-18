@@ -22,15 +22,16 @@
         }
         .banner {
             position: fixed;
-            top: 0;
+            top: 0px;
             left: 0;
+           
             right: 0;
             display: flex;
             justify-content: space-between;
             align-items: center;
             background-color: #2d2d2d;
             padding: 10px 20px;
-            border-bottom: 1px solid #3d3d3d;
+            
             z-index: 1000;
         }
         .filename {
@@ -59,7 +60,7 @@
             color: white;
         }
         .button:hover {
-            opacity: 0.9;
+            opacity: 0.6;
         }
         .container {
             display: flex;
@@ -89,14 +90,18 @@
         }
         #output-area {
             width: 50%;
-            height: 100%;
+            height: auto
             border-left: 1px solid #ccc;
             padding: 10px;
             background: white;
         }
+        #fileInput {
+            display: none;
+        }
     </style>
 </head>
 <body>
+    <input type="file" id="fileInput" accept=".html,.htm">
     <div class="banner">
         <h1 class="filename" id="filename">Untitled.html</h1>
         <div class="button-group">
@@ -117,7 +122,8 @@
             const placeholder = document.getElementById('placeholder');
             const outputArea = document.getElementById('output-area').contentWindow.document;
             const filenameElement = document.getElementById('filename');
-            let currentFileHandle = null;
+            const fileInput = document.getElementById('fileInput');
+            let currentFileName = 'Untitled.html';
 
             // Initialize CodeMirror
             const editor = CodeMirror(document.getElementById('editor'), {
@@ -138,70 +144,50 @@
 
             editor.on('change', updateOutput);
 
-            // Open file functionality
-            document.getElementById('openBtn').addEventListener('click', async () => {
-                try {
-                    const [fileHandle] = await window.showOpenFilePicker({
-                        types: [{
-                            description: 'HTML Files',
-                            accept: {
-                                'text/html': ['.html', '.htm']
-                            }
-                        }]
-                    });
-                    
-                    currentFileHandle = fileHandle;
-                    const file = await fileHandle.getFile();
-                    const contents = await file.text();
-                    
-                    editor.setValue(contents);
-                    filenameElement.textContent = fileHandle.name;
-                } catch (err) {
-                    if (err.name !== 'AbortError') {
-                        console.error('Error opening file:', err);
-                    }
+            // Open functionality
+            document.getElementById('openBtn').addEventListener('click', () => {
+                fileInput.click();
+            });
+
+            fileInput.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        editor.setValue(e.target.result);
+                        currentFileName = file.name;
+                        filenameElement.textContent = currentFileName;
+                    };
+                    reader.readAsText(file);
+                }
+                fileInput.value = ''; // Reset file input
+            });
+
+            // Save As functionality
+            function downloadFile(filename, content) {
+                const blob = new Blob([content], { type: 'text/html' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            }
+
+            document.getElementById('saveAsBtn').addEventListener('click', () => {
+                const filename = prompt('Enter filename:', currentFileName) || currentFileName;
+                if (filename) {
+                    currentFileName = filename.endsWith('.html') ? filename : `${filename}.html`;
+                    filenameElement.textContent = currentFileName;
+                    downloadFile(currentFileName, editor.getValue());
                 }
             });
 
             // Save functionality
-            document.getElementById('saveBtn').addEventListener('click', async () => {
-                if (currentFileHandle) {
-                    try {
-                        const writable = await currentFileHandle.createWritable();
-                        await writable.write(editor.getValue());
-                        await writable.close();
-                    } catch (err) {
-                        console.error('Error saving file:', err);
-                    }
-                } else {
-                    // If no file is open, behave like Save As
-                    document.getElementById('saveAsBtn').click();
-                }
-            });
-
-            // Save As functionality
-            document.getElementById('saveAsBtn').addEventListener('click', async () => {
-                try {
-                    const fileHandle = await window.showSaveFilePicker({
-                        types: [{
-                            description: 'HTML Files',
-                            accept: {
-                                'text/html': ['.html']
-                            }
-                        }]
-                    });
-                    
-                    currentFileHandle = fileHandle;
-                    const writable = await fileHandle.createWritable();
-                    await writable.write(editor.getValue());
-                    await writable.close();
-                    
-                    filenameElement.textContent = fileHandle.name;
-                } catch (err) {
-                    if (err.name !== 'AbortError') {
-                        console.error('Error saving file:', err);
-                    }
-                }
+            document.getElementById('saveBtn').addEventListener('click', () => {
+                downloadFile(currentFileName, editor.getValue());
             });
         });
     </script>
