@@ -28,7 +28,7 @@
             justify-content: space-between;
             align-items: center;
             background-color: #2d2d2d;
-            padding: 10px 20px;
+            padding: 10px 25px;
             z-index: 1000;
         }
         .filename {
@@ -57,8 +57,19 @@
             color: white;
         }
         .button:hover {
-            opacity: 0.6;
-        }
+    opacity: 1; /* Full opacity on hover */
+    background-color: black; /* Change to black */
+    animation: darken 0.3s forwards; /* Apply the animation */
+}
+
+@keyframes darken {
+    0% {
+        background-color: #your-default-color; /* Start with the default color */
+    }
+    100% {
+        background-color: black; /* End with black */
+    }
+}
         .container {
             display: flex;
             height: 100%;
@@ -127,6 +138,8 @@
             const placeholder = document.getElementById('placeholder');
             const outputArea = document.getElementById('output-area');
             const filenameElement = document.getElementById('filename');
+            filenameElement.style.fontWeight = 'bold';
+			filenameElement.style.textDecoration = 'underline';
             const fileInput = document.getElementById('fileInput');
             let currentFileName = 'Untitled.html';
             
@@ -192,20 +205,18 @@
                 document.body.removeChild(a);
             }
 
-            document.getElementById('saveAsBtn').addEventListener('click', () => {
-                const filename = prompt('Enter filename:', currentFileName) || currentFileName;
-                if (filename) {
-                    currentFileName = filename.endsWith('.html') ? filename : `${filename}.html`;
-                    filenameElement.textContent = currentFileName;
-                    downloadFile(currentFileName, editor.getValue());
-                }
-            });
+   
 
             // Save functionality
-            document.getElementById('saveBtn').addEventListener('click', () => {
-                downloadFile(currentFileName, editor.getValue());
-            });
-
+          document.getElementById('saveAsBtn').addEventListener('click', () => {
+    const newFilename = prompt('Enter filename:', currentFileName);
+    if (newFilename !== null) { // Only proceed if the user didn't cancel
+        const filename = newFilename.endsWith('.html') ? newFilename : `${newFilename}.html`;
+        currentFileName = filename;
+        filenameElement.textContent = currentFileName;
+        downloadFile(currentFileName, editor.getValue());
+    }
+});
             // Listen for messages from the iframe for print commands
             window.addEventListener('message', function(event) {
                 if (event.data === 'print') {
