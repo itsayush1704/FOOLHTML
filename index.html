@@ -10,7 +10,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/xml/xml.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/javascript/javascript.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/css/css.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/htmlmixed/htmlmixed.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/edit/closetag.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/mode/multiplex.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/material-darker.min.css">
@@ -24,14 +23,12 @@
             position: fixed;
             top: 0px;
             left: 0;
-           	
             right: 0;
             display: flex;
             justify-content: space-between;
             align-items: center;
             background-color: #2d2d2d;
             padding: 10px 20px;
-            
             z-index: 1000;
         }
         .filename {
@@ -65,7 +62,8 @@
         .container {
             display: flex;
             height: 100%;
-            padding-top: 51px;margin-top:-5px;
+            padding-top: 51px;
+            margin-top: -5px;
         }
         .editor-container {
             width: 50%;
@@ -90,10 +88,10 @@
         }
         #output-area {
             width: 50%;
-            height: auto;margin-top:-5px;
-            border-left: 1px solid #ccc;
-            padding: 10px;
+            height: auto;
+            margin-top: -5px;
             background: white;
+            overflow: auto;
         }
         #fileInput {
             display: none;
@@ -113,18 +111,19 @@
     <div class="container">
         <div class="editor-container">
             <div id="editor" class="CodeMirror"></div>
-            <div id="placeholder" class="placeholder">CODE <br>SOMETHING</br> FOOL!</div>
+            <div id="placeholder" class="placeholder">CODE <br>SOMETHING<br> FOOL!</div>
         </div>
-        <iframe id="output-area" sandbox="allow-scripts allow-same-origin"></iframe>
+        <div id="output-area"></div>
     </div>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const placeholder = document.getElementById('placeholder');
-            const outputArea = document.getElementById('output-area').contentWindow.document;
+            const outputArea = document.getElementById('output-area');
             const filenameElement = document.getElementById('filename');
             const fileInput = document.getElementById('fileInput');
             let currentFileName = 'Untitled.html';
-
+            
             // Initialize CodeMirror
             const editor = CodeMirror(document.getElementById('editor'), {
                 mode: "htmlmixed",
@@ -135,11 +134,25 @@
                 matchBrackets: true
             });
 
+            // Setup ShadowDOM for output
+            let shadowRoot = outputArea.attachShadow({mode: 'open'});
+
             function updateOutput() {
-                outputArea.open();
-                outputArea.writeln(editor.getValue());
-                outputArea.close();
-                placeholder.style.display = editor.getValue().trim() ? 'none' : 'block';
+                const htmlContent = editor.getValue();
+                shadowRoot.innerHTML = '';
+                
+                const style = document.createElement('style');
+                style.textContent = `
+                    html, body { height: 100%; margin: 0; padding: 0; }
+                    body { overflow: auto; }
+                `;
+                shadowRoot.appendChild(style);
+
+                const template = document.createElement('template');
+                template.innerHTML = htmlContent;
+                shadowRoot.appendChild(template.content);
+                
+                placeholder.style.display = htmlContent.trim() ? 'none' : 'block';
             }
 
             editor.on('change', updateOutput);
@@ -157,6 +170,7 @@
                         editor.setValue(e.target.result);
                         currentFileName = file.name;
                         filenameElement.textContent = currentFileName;
+                        updateOutput(); // Update output after loading new content
                     };
                     reader.readAsText(file);
                 }
